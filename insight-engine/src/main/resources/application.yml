@@ -1,0 +1,31 @@
+server:
+  port: 8089
+spring:
+  application:
+    name: insight-engine
+  datasource:
+    url: jdbc:postgresql://localhost:5432/analytics_db
+    username: repairbro
+    password: repairbro_dev
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  kafka:
+    bootstrap-servers: localhost:9094
+# ── JWT Config (shared secret for token validation) ───
+repairbro:
+  jwt:
+    secret: RepairBroSuperSecretKeyForDevelopmentOnlyChangeInProduction2024!
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

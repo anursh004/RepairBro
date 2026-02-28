@@ -1,0 +1,79 @@
+# Kong Declarative Configuration
+# API Gateway routing for RepairBro services
+_format_version: "3.0"
+
+services:
+  # ── Auth Service ─────────────────────────────────────
+  - name: auth-service
+    url: http://host.docker.internal:8081
+    routes:
+      - name: auth-routes
+        paths:
+          - /api/v1/auth
+        strip_path: false
+      - name: user-routes
+        paths:
+          - /api/v1/users
+        strip_path: false
+
+  # ── Repair Core Service ─────────────────────────────
+  - name: repair-core
+    url: http://host.docker.internal:8082
+    routes:
+      - name: ticket-routes
+        paths:
+          - /api/v1/tickets
+        strip_path: false
+
+  # ── FixBill Service ─────────────────────────────────
+  - name: fix-bill
+    url: http://host.docker.internal:8083
+    routes:
+      - name: invoice-routes
+        paths:
+          - /api/v1/invoices
+        strip_path: false
+      - name: estimate-routes
+        paths:
+          - /api/v1/estimates
+        strip_path: false
+      - name: payment-routes
+        paths:
+          - /api/v1/payments
+        strip_path: false
+
+plugins:
+  # ── Rate Limiting (global) ──────────────────────────
+  - name: rate-limiting
+    config:
+      minute: 100
+      policy: local
+
+  # ── CORS ────────────────────────────────────────────
+  - name: cors
+    config:
+      origins:
+        - "http://localhost:3000"
+        - "http://localhost:5173"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Authorization
+        - Content-Type
+        - X-Correlation-Id
+      exposed_headers:
+        - X-Correlation-Id
+      max_age: 3600
+      credentials: true
+
+  # ── Request ID (correlation) ────────────────────────
+  - name: correlation-id
+    config:
+      header_name: X-Correlation-Id
+      generator: uuid
+      echo_downstream: true
