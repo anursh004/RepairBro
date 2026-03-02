@@ -5,12 +5,24 @@ const client = axios.create({
     headers: { 'Content-Type': 'application/json' },
 });
 
-// ── Request interceptor: attach JWT ─────────────────────
+// ── Request interceptor: attach JWT + location context ──
 client.interceptors.request.use((config) => {
     const token = sessionStorage.getItem('rb_token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Inject location context for backend location scoping
+    try {
+        const stored = sessionStorage.getItem('rb_user');
+        if (stored) {
+            const user = JSON.parse(stored);
+            if (user.primaryLocation) {
+                config.headers['X-Location-Context'] = user.primaryLocation;
+            }
+        }
+    } catch { /* ignore */ }
+
     return config;
 });
 

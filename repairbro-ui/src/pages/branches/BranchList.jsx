@@ -4,6 +4,8 @@ import DataTable from '../../components/DataTable';
 import Modal from '../../components/Modal';
 import { shortId } from '../../utils/formatters';
 import { branchApi } from '../../api/branches';
+import { useActionPermission } from '../../hooks/useActionPermission';
+import { useLocationScope } from '../../hooks/useLocationScope';
 import toast from 'react-hot-toast';
 
 const SAMPLE = Array.from({ length: 10 }, (_, i) => ({
@@ -13,6 +15,8 @@ const SAMPLE = Array.from({ length: 10 }, (_, i) => ({
 }));
 
 export default function BranchList() {
+    const { canCreate, can } = useActionPermission('branches');
+    const { locations } = useLocationScope();
     const [branches, setBranches] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
@@ -39,9 +43,13 @@ export default function BranchList() {
 
     const tierColors = { 1: 'var(--accent-blue)', 2: 'var(--accent-amber)', 3: 'var(--accent-emerald)' };
 
+    const displayedBranches = locations.length > 0
+        ? branches.filter(br => locations.some(loc => loc.id === br.id || loc.name === br.name))
+        : branches;
+
     return (
         <div className="slide-in">
-            <div className="page-header"><h1>Branches</h1><button className="btn btn-primary" onClick={() => setShowCreate(true)}><Plus size={16} /> Add Branch</button></div>
+            <div className="page-header"><h1>Branches</h1>{canCreate && <button className="btn btn-primary" onClick={() => setShowCreate(true)}><Plus size={16} /> Add Branch</button>}</div>
             <div className="card">
                 {loading ? <div className="loading-spinner"><div className="spinner" /></div> : (
                     <DataTable columns={[
@@ -49,12 +57,12 @@ export default function BranchList() {
                         { key: 'name', label: 'Branch Name', render: (v) => <span className="flex items-center gap-8"><Building2 size={14} style={{ color: 'var(--accent-purple)' }} /><b>{v}</b></span> },
                         { key: 'city', label: 'City', render: v => <span className="flex items-center gap-8"><MapPin size={14} style={{ color: 'var(--text-muted)' }} />{v}</span> },
                         { key: 'tier', label: 'Tier', render: v => <span className="status-badge" style={{ color: tierColors[v], background: `${tierColors[v]}18`, border: `1px solid ${tierColors[v]}30` }}>Tier {v}</span> },
-                        {
+                        ...(can('deactivate') ? [{
                             key: 'id', label: 'Actions', sortable: false, render: (_, row) => (
                                 <div className="table-actions"><button className="btn btn-danger btn-sm" onClick={(e) => { e.stopPropagation(); handleDeactivate(row.id); }}>Deactivate</button></div>
                             )
-                        },
-                    ]} data={branches} />
+                        }] : []),
+                    ]} data={displayedBranches} />
                 )}
             </div>
             <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Add Branch" footer={

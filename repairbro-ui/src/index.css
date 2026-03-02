@@ -938,6 +938,70 @@ a:hover { color: #60a5fa; }
 .fade-in { animation: fadeIn var(--transition-base) ease-out; }
 .slide-in { animation: slideIn var(--transition-base) ease-out; }
 
+/* ── RBAC: Read-Only Fields ───────────────────────────── */
+.field-readonly {
+  opacity: 0.7;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.field-readonly-display {
+  padding: 10px 14px;
+  background: rgba(100, 116, 139, 0.08);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ── RBAC: Location Badge ─────────────────────────────── */
+.location-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+}
+.location-badge .location-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-emerald);
+  flex-shrink: 0;
+}
+
+/* ── RBAC: Bulk Actions Bar ───────────────────────────── */
+.bulk-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  animation: slideUp var(--transition-fast) ease-out;
+}
+.bulk-actions-bar .bulk-count {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent-blue);
+  white-space: nowrap;
+}
+
+/* ── RBAC: Masked Data ────────────────────────────────── */
+.masked-value {
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
 /* ── Responsive ────────────────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar { width: var(--sidebar-collapsed); }

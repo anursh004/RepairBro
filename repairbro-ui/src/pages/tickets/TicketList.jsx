@@ -1,20 +1,36 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search, Filter, Download } from 'lucide-react';
 import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
 import Modal from '../../components/Modal';
 import PermissionGate from '../../components/PermissionGate';
 import { TICKET_STATUS, DEVICE_TYPES, PRIORITIES } from '../../utils/constants';
 import { formatDateTime, shortId } from '../../utils/formatters';
-import { usePermittedColumns } from '../../hooks/usePermissions';
+import { usePermittedTabs } from '../../hooks/usePermissions';
+import { useMaskedColumns } from '../../hooks/useMaskedColumns';
+import { useActionPermission } from '../../hooks/useActionPermission';
 import { ticketApi } from '../../api/tickets';
 import { customerApi } from '../../api/customers';
 import { branchApi } from '../../api/branches';
+import { useLocationScope } from '../../hooks/useLocationScope';
 import toast from 'react-hot-toast';
+
+const TICKET_TABS = {
+    all: 'All Tickets',
+    myAssigned: 'My Assigned',
+    pendingDiagnosis: 'Pending Diagnosis',
+    awaitingParts: 'Awaiting Parts',
+    readyForQA: 'Ready for QA',
+    completed: 'Completed',
+};
 
 export default function TicketList() {
     const navigate = useNavigate();
+    const { can } = useActionPermission('tickets');
+    const permittedTabs = usePermittedTabs('tickets');
+    const availableTabs = permittedTabs || ['all', 'myAssigned', 'pendingDiagnosis', 'awaitingParts', 'readyForQA', 'completed'];
+    const [activeTab, setActiveTab] = useState('all');
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(false);
     const [statusFilter, setStatusFilter] = useState('');
@@ -25,24 +41,48 @@ export default function TicketList() {
     const [form, setForm] = useState({
         customerId: '', branchId: '', deviceType: 'LAPTOP', deviceModel: '', symptom: '', priority: 'MEDIUM',
     });
+    const { locations, primaryLocation } = useLocationScope();
+    const [selectedBranch, setSelectedBranch] = useState('');
 
     useEffect(() => {
         loadData();
     }, []);
 
+    useEffect(() => {
+        if (!availableTabs.includes(activeTab)) setActiveTab(availableTabs[0] || 'all');
+    }, [availableTabs]);
+
     const loadData = async () => {
         setLoading(true);
         try {
             const [b, c] = await Promise.all([branchApi.getAll(), customerApi.getAll()]);
-            setBranches(Array.isArray(b) ? b : []);
+            const allBranches = Array.isArray(b) ? b : [];
+            // Scope branches to user's locations if available
+            const scoped = locations.length > 0
+                ? allBranches.filter(br => locations.some(loc => loc.id === br.id || loc.name === br.name))
+                : allBranches;
+            setBranches(scoped);
             setCustomers(Array.isArray(c) ? c : []);
-            // Try to load tickets for first branch
-            if (Array.isArray(b) && b.length > 0) {
-                const res = await ticketApi.getByBranch(b[0].id);
+            const target = primaryLocation || (scoped.length > 0 ? scoped[0].id : null);
+            if (target) {
+                setSelectedBranch(target);
+                const res = await ticketApi.getByBranch(target);
                 setTickets(Array.isArray(res?.content) ? res.content : Array.isArray(res) ? res : []);
             }
         } catch {
-            // Use sample data if API not available
+            setTickets(generateSampleTickets());
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadTicketsForBranch = async (branchId) => {
+        setSelectedBranch(branchId);
+        setLoading(true);
+        try {
+            const res = await ticketApi.getByBranch(branchId);
+            setTickets(Array.isArray(res?.content) ? res.content : Array.isArray(res) ? res : []);
+        } catch {
             setTickets(generateSampleTickets());
         } finally {
             setLoading(false);
@@ -62,6 +102,13 @@ export default function TicketList() {
     };
 
     const filtered = tickets.filter((t) => {
+        // Tab-based filtering
+        if (activeTab === 'pendingDiagnosis' && t.status !== 'OPEN') return false;
+        if (activeTab === 'awaitingParts' && t.status !== 'AWAITING_PARTS') return false;
+        if (activeTab === 'readyForQA' && t.status !== 'QA') return false;
+        if (activeTab === 'completed' && t.status !== 'COMPLETED') return false;
+        // myAssigned would filter by assignee, but we don't have that info locally
+        // Status dropdown filter
         if (statusFilter && t.status !== statusFilter) return false;
         if (search) {
             const s = search.toLowerCase();
@@ -89,7 +136,7 @@ export default function TicketList() {
         },
         { key: 'createdAt', label: 'Created', render: (v) => formatDateTime(v) },
     ];
-    const columns = usePermittedColumns('tickets', allColumns);
+    const columns = useMaskedColumns('tickets', allColumns);
 
     return (
         <div className="slide-in">
@@ -100,6 +147,15 @@ export default function TicketList() {
                         <Plus size={16} /> New Ticket
                     </button>
                 </PermissionGate>
+                {can('export') && <button className="btn btn-secondary" onClick={() => toast.success('Export started')}><Download size={16} /> Export</button>}
+            </div>
+
+            <div className="tab-bar">
+                {availableTabs.map(tabKey => (
+                    <button key={tabKey} className={`tab-item ${activeTab === tabKey ? 'active' : ''}`} onClick={() => setActiveTab(tabKey)}>
+                        {TICKET_TABS[tabKey] || tabKey}
+                    </button>
+                ))}
             </div>
 
             <div className="filter-bar">
@@ -111,6 +167,11 @@ export default function TicketList() {
                     <option value="">All Statuses</option>
                     {Object.entries(TICKET_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                 </select>
+                {branches.length > 1 && (
+                    <select className="form-select" style={{ width: 200 }} value={selectedBranch} onChange={(e) => loadTicketsForBranch(e.target.value)}>
+                        {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                )}
             </div>
 
             <div className="card">

@@ -6,11 +6,14 @@ import Modal from '../../components/Modal';
 import { TICKET_STATUS, PRIORITIES } from '../../utils/constants';
 import { formatDateTime, formatCurrency } from '../../utils/formatters';
 import { ticketApi } from '../../api/tickets';
+import { useActionPermission } from '../../hooks/useActionPermission';
+import PermissionField from '../../components/PermissionField';
 import toast from 'react-hot-toast';
 
 export default function TicketDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { can } = useActionPermission('tickets');
     const [ticket, setTicket] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showStatusModal, setShowStatusModal] = useState(false);
@@ -92,14 +95,17 @@ export default function TicketDetail() {
                     <div className="detail-field"><div className="detail-label">Symptom</div><div className="detail-value">{ticket.symptom}</div></div>
                     <div className="detail-field"><div className="detail-label">Priority</div><div className="detail-value" style={{ color: PRIORITIES[ticket.priority]?.color }}>{ticket.priority}</div></div>
                     <div className="detail-field"><div className="detail-label">Customer</div><div className="detail-value">{ticket.customerName || '—'}</div></div>
-                    <div className="detail-field"><div className="detail-label">Phone</div><div className="detail-value">{ticket.customerPhone || '—'}</div></div>
+                    <PermissionField page="tickets" field="customerPhone">
+                        <div className="detail-field"><div className="detail-label">Phone</div><div className="detail-value">{ticket.customerPhone || '—'}</div></div>
+                    </PermissionField>
                     <div className="detail-field"><div className="detail-label">Branch</div><div className="detail-value">{ticket.branchName || '—'}</div></div>
                     <div className="detail-field"><div className="detail-label">Technician</div><div className="detail-value">{ticket.technicianName || 'Not assigned'}</div></div>
                     <div className="detail-field"><div className="detail-label">Estimated Cost</div><div className="detail-value">{formatCurrency(ticket.estimatedCost)}</div></div>
 
                     <div className="action-bar">
-                        <button className="btn btn-primary btn-sm" onClick={() => setShowStatusModal(true)}><CheckCircle size={14} /> Update Status</button>
-                        <button className="btn btn-secondary btn-sm" onClick={() => setShowDiagModal(true)}><Wrench size={14} /> Add Diagnosis</button>
+                        {can('updateStatus') && <button className="btn btn-primary btn-sm" onClick={() => setShowStatusModal(true)}><CheckCircle size={14} /> Update Status</button>}
+                        {can('addDiagnosis') && <button className="btn btn-secondary btn-sm" onClick={() => setShowDiagModal(true)}><Wrench size={14} /> Add Diagnosis</button>}
+                        {can('assign') && <button className="btn btn-secondary btn-sm" onClick={() => {}}><UserPlus size={14} /> Assign Tech</button>}
                         <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/invoices?ticket=${id}`)}><FileText size={14} /> Invoice</button>
                     </div>
                 </div>
@@ -155,13 +161,15 @@ export default function TicketDetail() {
                 <><button className="btn btn-secondary" onClick={() => setShowStatusModal(false)}>Cancel</button>
                     <button className="btn btn-primary" onClick={handleStatusUpdate}>Update</button></>
             }>
-                <div className="form-group">
-                    <label className="form-label">New Status</label>
-                    <select className="form-select" value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
-                        <option value="">Select status...</option>
-                        {Object.entries(TICKET_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                    </select>
-                </div>
+                <PermissionField page="tickets" field="status">
+                    <div className="form-group">
+                        <label className="form-label">New Status</label>
+                        <select className="form-select" value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
+                            <option value="">Select status...</option>
+                            {Object.entries(TICKET_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                        </select>
+                    </div>
+                </PermissionField>
             </Modal>
 
             {/* Diagnosis Modal */}

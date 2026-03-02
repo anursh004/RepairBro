@@ -4,6 +4,7 @@ import DataTable from '../../components/DataTable';
 import Modal from '../../components/Modal';
 import { formatDateTime, shortId, formatCurrency } from '../../utils/formatters';
 import { simulationApi } from '../../api/simulation';
+import { useActionPermission } from '../../hooks/useActionPermission';
 import toast from 'react-hot-toast';
 
 const SAMPLE_S = [
@@ -16,6 +17,7 @@ const SAMPLE_R = [
 ];
 
 export default function SimulationPage() {
+    const { can } = useActionPermission('simulation');
     const [scenarios, setScenarios] = useState([]);
     const [results, setResults] = useState([]);
     const [selected, setSelected] = useState(null);
@@ -40,7 +42,7 @@ export default function SimulationPage() {
 
     return (
         <div className="slide-in">
-            <div className="page-header"><h1>Simulation Lab</h1><button className="btn btn-primary" onClick={() => setShowCreate(true)}><Plus size={16} /> New Scenario</button></div>
+            <div className="page-header"><h1>Simulation Lab</h1>{can('create') && <button className="btn btn-primary" onClick={() => setShowCreate(true)}><Plus size={16} /> New Scenario</button>}</div>
             <div className="card mb-24">
                 <DataTable columns={[
                     { key: 'name', label: 'Scenario', render: v => <b>{v}</b> },
@@ -48,7 +50,7 @@ export default function SimulationPage() {
                     { key: 'avgDemandPerDay', label: 'Demand/Day' },
                     { key: 'inventoryStrategy', label: 'Inventory' },
                     { key: 'status', label: 'Status', render: v => <span className="status-badge" style={{ color: v === 'COMPLETED' ? 'var(--accent-emerald)' : 'var(--accent-amber)', background: v === 'COMPLETED' ? 'var(--accent-emerald-glow)' : 'var(--accent-amber-glow)' }}><span className="dot" />{v}</span> },
-                    { key: 'id', label: 'Actions', sortable: false, render: (_, row) => <button className="btn btn-primary btn-sm" onClick={() => handleRun(row.id)}><Play size={14} /> Run</button> },
+                    { key: 'id', label: 'Actions', sortable: false, render: (_, row) => can('run') ? <button className="btn btn-primary btn-sm" onClick={() => handleRun(row.id)}><Play size={14} /> Run</button> : null },
                 ]} data={scenarios} />
             </div>
 

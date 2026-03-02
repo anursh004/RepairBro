@@ -1,7 +1,21 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { SECTION_PERMISSIONS, ROLE_ACCESS } from '../utils/constants';
+import { ROLE_ACCESS } from '../utils/constants';
+import { SECTION_PERMISSIONS, GROUP_LEVEL_MAP, GROUP_LEVEL_PRIORITY } from '../config/permissions.config';
 
 const AuthContext = createContext(null);
+
+/**
+ * Derive the highest-privilege group level from the user's group names.
+ * E.g., a user in ["Service Manager", "Billing Viewer"] => "MANAGEMENT"
+ */
+function resolveGroupLevel(groups = []) {
+    for (const level of GROUP_LEVEL_PRIORITY) {
+        if (groups.some((g) => GROUP_LEVEL_MAP[g] === level)) {
+            return level;
+        }
+    }
+    return 'OPERATIONAL'; // fallback
+}
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
@@ -19,15 +33,19 @@ export function AuthProvider({ children }) {
     }, []);
 
     const login = (userData, token, refreshToken) => {
+        const groups = userData.groups || [];
+        const locations = userData.locations || [];
         const u = {
             id: userData.userId || userData.id,
             name: userData.fullName || userData.name || userData.email,
             email: userData.email,
             role: userData.role || 'ADMIN',
             // New group-based RBAC fields
-            groups: userData.groups || [],
+            groups,
             permissions: userData.permissions || [],
-            locations: userData.locations || [],
+            locations,
+            primaryLocation: userData.primaryLocation || locations[0] || null,
+            groupLevel: resolveGroupLevel(groups),
         };
         sessionStorage.setItem('rb_token', token);
         if (refreshToken) sessionStorage.setItem('rb_refresh', refreshToken);
@@ -72,6 +90,14 @@ export function AuthProvider({ children }) {
     };
 
     /**
+     * Check if user has ANY ONE of the given permissions.
+     */
+    const hasAnyPermission = (perms = []) => {
+        if (!user) return false;
+        return perms.some((p) => hasPermission(p));
+    };
+
+    /**
      * Check if user belongs to a specific group.
      */
     const inGroup = (groupName) => {
@@ -80,7 +106,7 @@ export function AuthProvider({ children }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout, hasAccess, hasPermission, inGroup }}>
+        <AuthContext.Provider value={{ user, loading, login, logout, hasAccess, hasPermission, hasAnyPermission, inGroup }}>
             {children}
         </AuthContext.Provider>
     );

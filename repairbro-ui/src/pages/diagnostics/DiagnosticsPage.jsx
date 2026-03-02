@@ -5,6 +5,7 @@ import Modal from '../../components/Modal';
 import { DEVICE_TYPES } from '../../utils/constants';
 import { shortId } from '../../utils/formatters';
 import { diagnosticsApi } from '../../api/diagnostics';
+import { useActionPermission } from '../../hooks/useActionPermission';
 import toast from 'react-hot-toast';
 
 const SAMPLE = [
@@ -15,6 +16,7 @@ const SAMPLE = [
 ];
 
 export default function DiagnosticsPage() {
+    const { can } = useActionPermission('diagnostics');
     const [tab, setTab] = useState('library');
     const [flows, setFlows] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -70,7 +72,7 @@ export default function DiagnosticsPage() {
                         <div className="form-group"><label className="form-label">Device Type</label><select className="form-select" value={evalForm.deviceType} onChange={e => setEvalForm({ ...evalForm, deviceType: e.target.value })}>{DEVICE_TYPES.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
                     </div>
                     <div className="form-group"><label className="form-label">Symptom</label><textarea className="form-textarea" value={evalForm.symptom} onChange={e => setEvalForm({ ...evalForm, symptom: e.target.value })} placeholder="Describe the symptom..." /></div>
-                    <button className="btn btn-primary" onClick={handleEvaluate}><Play size={16} /> Evaluate</button>
+                    {can('evaluate') && <button className="btn btn-primary" onClick={handleEvaluate}><Play size={16} /> Evaluate</button>}
 
                     {evalResult && (
                         <div style={{ marginTop: 24, padding: 20, background: 'var(--glass-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' }}>

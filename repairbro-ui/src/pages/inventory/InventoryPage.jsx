@@ -6,6 +6,9 @@ import KpiCard from '../../components/KpiCard';
 import { formatCurrency, shortId } from '../../utils/formatters';
 import { inventoryApi } from '../../api/inventory';
 import { branchApi } from '../../api/branches';
+import { useActionPermission } from '../../hooks/useActionPermission';
+import { usePermittedTabs } from '../../hooks/usePermissions';
+import { useLocationScope } from '../../hooks/useLocationScope';
 import toast from 'react-hot-toast';
 
 const SAMPLE_PARTS = Array.from({ length: 15 }, (_, i) => ({
@@ -19,7 +22,11 @@ const SAMPLE_INV = Array.from({ length: 15 }, (_, i) => ({
 }));
 
 export default function InventoryPage() {
-    const [tab, setTab] = useState('parts');
+    const { can } = useActionPermission('inventory');
+    const { locations, primaryLocation } = useLocationScope();
+    const permittedTabs = usePermittedTabs('inventory');
+    const availableTabs = permittedTabs || ['partsCatalog', 'stockLevels'];
+    const [tab, setTab] = useState(availableTabs[0] || 'partsCatalog');
     const [parts, setParts] = useState([]);
     const [inventory, setInventory] = useState([]);
     const [branches, setBranches] = useState([]);
@@ -30,6 +37,10 @@ export default function InventoryPage() {
 
     useEffect(() => { loadParts(); loadBranches(); }, []);
 
+    useEffect(() => {
+        if (!availableTabs.includes(tab)) setTab(availableTabs[0] || 'partsCatalog');
+    }, [availableTabs]);
+
     const loadParts = async () => {
         setLoading(true);
         try { const d = await inventoryApi.getParts(); setParts(Array.isArray(d) ? d : []); }
@@ -37,7 +48,16 @@ export default function InventoryPage() {
     };
 
     const loadBranches = async () => {
-        try { const d = await branchApi.getAll(); setBranches(Array.isArray(d) ? d : []); }
+        try {
+            const d = await branchApi.getAll();
+            const all = Array.isArray(d) ? d : [];
+            const scoped = locations.length > 0
+                ? all.filter(br => locations.some(loc => loc.id === br.id || loc.name === br.name))
+                : all;
+            setBranches(scoped);
+            // Auto-select primary location
+            if (primaryLocation && !selectedBranch) loadInventory(primaryLocation);
+        }
         catch { setBranches([{ id: 'b1', name: 'Mumbai Central' }, { id: 'b2', name: 'Delhi NCR' }]); }
     };
 
@@ -57,14 +77,16 @@ export default function InventoryPage() {
 
     return (
         <div className="slide-in">
-            <div className="page-header"><h1>Inventory & Parts</h1><button className="btn btn-primary" onClick={() => setShowAddPart(true)}><Plus size={16} /> Add Part</button></div>
+            <div className="page-header"><h1>Inventory & Parts</h1>{can('createPart') && <button className="btn btn-primary" onClick={() => setShowAddPart(true)}><Plus size={16} /> Add Part</button>}</div>
 
             <div className="tab-bar">
-                <button className={`tab-item ${tab === 'parts' ? 'active' : ''}`} onClick={() => setTab('parts')}>Parts Catalog</button>
-                <button className={`tab-item ${tab === 'inventory' ? 'active' : ''}`} onClick={() => setTab('inventory')}>Branch Inventory</button>
+                {availableTabs.includes('partsCatalog') && <button className={`tab-item ${tab === 'partsCatalog' ? 'active' : ''}`} onClick={() => setTab('partsCatalog')}>Parts Catalog</button>}
+                {availableTabs.includes('stockLevels') && <button className={`tab-item ${tab === 'stockLevels' ? 'active' : ''}`} onClick={() => setTab('stockLevels')}>Branch Inventory</button>}
+                {availableTabs.includes('procurement') && <button className={`tab-item ${tab === 'procurement' ? 'active' : ''}`} onClick={() => setTab('procurement')}>Procurement</button>}
+                {availableTabs.includes('lowStockAlerts') && <button className={`tab-item ${tab === 'lowStockAlerts' ? 'active' : ''}`} onClick={() => setTab('lowStockAlerts')}>Low Stock Alerts</button>}
             </div>
 
-            {tab === 'parts' && (
+            {tab === 'partsCatalog' && (
                 <div className="card">
                     {loading ? <div className="loading-spinner"><div className="spinner" /></div> : (
                         <DataTable columns={[
@@ -83,7 +105,7 @@ export default function InventoryPage() {
                 </div>
             )}
 
-            {tab === 'inventory' && (
+            {tab === 'stockLevels' && (
                 <>
                     <div className="filter-bar">
                         <select className="form-select" style={{ width: 260 }} value={selectedBranch} onChange={e => loadInventory(e.target.value)}>

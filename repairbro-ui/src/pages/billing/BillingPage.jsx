@@ -6,7 +6,9 @@ import Modal from '../../components/Modal';
 import PermissionGate from '../../components/PermissionGate';
 import { INVOICE_STATUS, ESTIMATE_STATUS } from '../../utils/constants';
 import { formatCurrency, formatDateTime, shortId } from '../../utils/formatters';
-import { usePermittedColumns, usePermittedTabs } from '../../hooks/usePermissions';
+import { usePermittedTabs } from '../../hooks/usePermissions';
+import { useMaskedColumns } from '../../hooks/useMaskedColumns';
+import { useActionPermission } from '../../hooks/useActionPermission';
 import { invoiceApi, estimateApi } from '../../api/invoices';
 import toast from 'react-hot-toast';
 
@@ -30,6 +32,7 @@ export default function BillingPage() {
     const [invoices, setInvoices] = useState([]);
     const [estimates, setEstimates] = useState([]);
     const [loading, setLoading] = useState(false);
+    const { can: canEstimate } = useActionPermission('estimates');
 
     useEffect(() => {
         setInvoices(SAMPLE_INV);
@@ -58,7 +61,7 @@ export default function BillingPage() {
         { key: 'status', label: 'Status', render: v => <StatusBadge status={v} statusMap={INVOICE_STATUS} /> },
         { key: 'createdAt', label: 'Date', render: v => formatDateTime(v) },
     ], []);
-    const invoiceCols = usePermittedColumns('invoices', allInvoiceCols);
+    const invoiceCols = useMaskedColumns('invoices', allInvoiceCols);
 
     // ── Estimate columns (permission-filtered) ──
     const allEstimateCols = useMemo(() => [
@@ -71,13 +74,13 @@ export default function BillingPage() {
         {
             key: 'id', label: 'Actions', permKey: 'actions', sortable: false, render: (_, row) => row.status === 'PENDING' ? (
                 <div className="table-actions">
-                    <button className="btn btn-sm" style={{ color: 'var(--accent-emerald)', background: 'var(--accent-emerald-glow)' }} onClick={() => handleApprove(row.id)}><CheckCircle size={14} /></button>
-                    <button className="btn btn-sm" style={{ color: 'var(--accent-red)', background: 'var(--accent-red-glow)' }} onClick={() => handleReject(row.id)}><XCircle size={14} /></button>
+                    {canEstimate('approve') && <button className="btn btn-sm" style={{ color: 'var(--accent-emerald)', background: 'var(--accent-emerald-glow)' }} onClick={() => handleApprove(row.id)}><CheckCircle size={14} /></button>}
+                    {canEstimate('reject') && <button className="btn btn-sm" style={{ color: 'var(--accent-red)', background: 'var(--accent-red-glow)' }} onClick={() => handleReject(row.id)}><XCircle size={14} /></button>}
                 </div>
             ) : null
         },
     ], []);
-    const estimateCols = usePermittedColumns('estimates', allEstimateCols);
+    const estimateCols = useMaskedColumns('estimates', allEstimateCols);
 
     return (
         <div className="slide-in">

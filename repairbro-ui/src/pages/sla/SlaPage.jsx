@@ -6,6 +6,8 @@ import KpiCard from '../../components/KpiCard';
 import { formatDateTime, shortId } from '../../utils/formatters';
 import { slaApi } from '../../api/sla';
 import { branchApi } from '../../api/branches';
+import { usePermittedTabs } from '../../hooks/usePermissions';
+import { useLocationScope } from '../../hooks/useLocationScope';
 import toast from 'react-hot-toast';
 
 const SAMPLE_SLA = Array.from({ length: 10 }, (_, i) => ({
@@ -19,7 +21,10 @@ const SAMPLE_COMP = [
 ];
 
 export default function SlaPage() {
-    const [tab, setTab] = useState('sla');
+    const { locations, primaryLocation } = useLocationScope();
+    const permittedTabs = usePermittedTabs('sla');
+    const availableTabs = permittedTabs || ['slaRecords', 'complaints'];
+    const [tab, setTab] = useState(availableTabs[0] || 'slaRecords');
     const [slas, setSlas] = useState([]);
     const [complaints, setComplaints] = useState([]);
     const [branches, setBranches] = useState([]);
@@ -29,8 +34,20 @@ export default function SlaPage() {
         loadBranches();
     }, []);
 
+    useEffect(() => {
+        if (!availableTabs.includes(tab)) setTab(availableTabs[0] || 'slaRecords');
+    }, [availableTabs]);
+
     const loadBranches = async () => {
-        try { const d = await branchApi.getAll(); setBranches(Array.isArray(d) ? d : []); }
+        try {
+            const d = await branchApi.getAll();
+            const all = Array.isArray(d) ? d : [];
+            const scoped = locations.length > 0
+                ? all.filter(br => locations.some(loc => loc.id === br.id || loc.name === br.name))
+                : all;
+            setBranches(scoped);
+            if (primaryLocation && !selectedBranch) loadData(primaryLocation);
+        }
         catch { setBranches([{ id: 'b1', name: 'Mumbai Central' }]); }
     };
 
@@ -61,11 +78,11 @@ export default function SlaPage() {
                     </div>
 
                     <div className="tab-bar">
-                        <button className={`tab-item ${tab === 'sla' ? 'active' : ''}`} onClick={() => setTab('sla')}>SLA Records</button>
-                        <button className={`tab-item ${tab === 'complaints' ? 'active' : ''}`} onClick={() => setTab('complaints')}>Complaints</button>
+                        {availableTabs.includes('slaRecords') && <button className={`tab-item ${tab === 'slaRecords' ? 'active' : ''}`} onClick={() => setTab('slaRecords')}>SLA Records</button>}
+                        {availableTabs.includes('complaints') && <button className={`tab-item ${tab === 'complaints' ? 'active' : ''}`} onClick={() => setTab('complaints')}>Complaints</button>}
                     </div>
 
-                    {tab === 'sla' && (
+                    {tab === 'slaRecords' && (
                         <div className="card">
                             <DataTable columns={[
                                 { key: 'ticketId', label: 'Ticket', render: v => <span style={{ fontFamily: 'monospace' }}>{shortId(v)}</span> },

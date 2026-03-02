@@ -5,6 +5,7 @@ import Modal from '../../components/Modal';
 import KpiCard from '../../components/KpiCard';
 import { formatCurrency, formatDateTime, shortId } from '../../utils/formatters';
 import { franchiseApi } from '../../api/franchises';
+import { useMaskedColumns } from '../../hooks/useMaskedColumns';
 import toast from 'react-hot-toast';
 
 const SAMPLE_F = [
@@ -41,6 +42,17 @@ export default function FranchisePage() {
     const tierColor = { PREMIUM: 'var(--accent-purple)', STANDARD: 'var(--accent-blue)' };
     const statusColor = { ACTIVE: 'var(--accent-emerald)', PENDING: 'var(--accent-amber)', INACTIVE: 'var(--accent-red)' };
 
+    const allFranchiseCols = [
+        { key: 'name', label: 'Franchise', render: v => <span className="flex items-center gap-8"><Store size={14} style={{ color: 'var(--accent-purple)' }} /><b>{v}</b></span> },
+        { key: 'ownerName', label: 'Owner' },
+        { key: 'city', label: 'City' },
+        { key: 'tier', label: 'Tier', render: v => <span className="status-badge" style={{ color: tierColor[v], background: `${tierColor[v]}18` }}>{v}</span> },
+        { key: 'status', label: 'Status', render: v => <span className="status-badge" style={{ color: statusColor[v], background: `${statusColor[v]}18` }}><span className="dot" />{v}</span> },
+        { key: 'royaltyPercent', label: 'Royalty', render: v => `${v}%` },
+        { key: 'setupFee', label: 'Setup Fee', render: v => formatCurrency(v) },
+    ];
+    const franchiseCols = useMaskedColumns('franchises', allFranchiseCols);
+
     return (
         <div className="slide-in">
             <div className="page-header"><h1>Franchise Hub</h1></div>
@@ -51,15 +63,7 @@ export default function FranchisePage() {
 
             {tab === 'franchises' && (
                 <div className="card">
-                    <DataTable columns={[
-                        { key: 'name', label: 'Franchise', render: v => <span className="flex items-center gap-8"><Store size={14} style={{ color: 'var(--accent-purple)' }} /><b>{v}</b></span> },
-                        { key: 'ownerName', label: 'Owner' },
-                        { key: 'city', label: 'City' },
-                        { key: 'tier', label: 'Tier', render: v => <span className="status-badge" style={{ color: tierColor[v], background: `${tierColor[v]}18` }}>{v}</span> },
-                        { key: 'status', label: 'Status', render: v => <span className="status-badge" style={{ color: statusColor[v], background: `${statusColor[v]}18` }}><span className="dot" />{v}</span> },
-                        { key: 'royaltyPercent', label: 'Royalty', render: v => `${v}%` },
-                        { key: 'setupFee', label: 'Setup Fee', render: v => formatCurrency(v) },
-                    ]} data={franchises} />
+                    <DataTable columns={franchiseCols} data={franchises} />
                 </div>
             )}
 

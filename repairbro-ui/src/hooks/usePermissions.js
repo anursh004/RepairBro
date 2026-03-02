@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useAuth } from './useAuth';
-import { COLUMN_PERMISSIONS, TAB_PERMISSIONS } from '../utils/constants';
+import { COLUMN_PERMISSIONS, TAB_PERMISSIONS } from '../config/permissions.config';
 
 /**
  * Filter table columns based on user permissions.

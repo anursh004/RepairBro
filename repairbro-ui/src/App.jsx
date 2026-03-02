@@ -18,6 +18,8 @@ import SimulationPage from './pages/simulation/SimulationPage';
 import UserManagement from './pages/users/UserManagement';
 import TechnicianList from './pages/technicians/TechnicianList';
 import GroupManagement from './pages/groups/GroupManagement';
+import AuditLogPage from './pages/audit/AuditLogPage';
+import LoginHistoryPage from './pages/audit/LoginHistoryPage';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -62,6 +64,8 @@ function AppRoutes() {
         <Route path="simulation" element={<RoleRoute section="simulation"><SimulationPage /></RoleRoute>} />
         <Route path="groups" element={<RoleRoute section="groups"><GroupManagement /></RoleRoute>} />
         <Route path="users" element={<RoleRoute section="users"><UserManagement /></RoleRoute>} />
+        <Route path="audit" element={<RoleRoute section="audit"><AuditLogPage /></RoleRoute>} />
+        <Route path="audit/logins" element={<RoleRoute section="audit"><LoginHistoryPage /></RoleRoute>} />
       </Route>
     </Routes>
   );

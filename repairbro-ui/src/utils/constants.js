@@ -1,3 +1,5 @@
+import { SECTION_PERMISSIONS } from '../config/permissions.config';
+
 // ── Legacy Roles (deprecated — use groups/permissions) ──
 export const ROLES = {
     ADMIN: 'ADMIN',
@@ -5,26 +7,6 @@ export const ROLES = {
     TECHNICIAN: 'TECHNICIAN',
     FRANCHISEE: 'FRANCHISEE',
     CUSTOMER: 'CUSTOMER',
-};
-
-// ── Permission → Section Mapping ────────────────────────
-// Maps a nav section key to the permission(s) needed to see it.
-// User needs at least ONE permission in the list to see the section.
-export const SECTION_PERMISSIONS = {
-    dashboard: ['TICKET_VIEW', 'METRICS_VIEW'],
-    tickets: ['TICKET_VIEW', 'TICKET_CREATE'],
-    customers: ['CUSTOMER_VIEW', 'CUSTOMER_CREATE'],
-    branches: ['BRANCH_VIEW', 'BRANCH_CREATE'],
-    technicians: ['TECHNICIAN_VIEW', 'TECHNICIAN_CREATE'],
-    billing: ['INVOICE_VIEW', 'ESTIMATE_VIEW'],
-    diagnostics: ['DIAG_VIEW_LIBRARY', 'DIAG_EVALUATE'],
-    inventory: ['PARTS_VIEW', 'INVENTORY_VIEW'],
-    franchises: ['FRANCHISE_VIEW', 'ROYALTY_VIEW'],
-    sla: ['SLA_VIEW', 'COMPLAINT_VIEW'],
-    notifications: ['NOTIFICATION_VIEW'],
-    simulation: ['SIMULATION_VIEW'],
-    users: ['USER_VIEW_ALL', 'GROUP_VIEW'],
-    groups: ['GROUP_VIEW', 'GROUP_CREATE'],
 };
 
 // ── Legacy role-based access (fallback for old tokens) ──
@@ -115,6 +97,7 @@ export const NAV_SECTIONS = [
         title: 'Settings',
         items: [
             { key: 'simulation', label: 'Simulation', path: '/simulation', icon: 'FlaskConical' },
+            { key: 'audit', label: 'Audit Log', path: '/audit', icon: 'ScrollText' },
             { key: 'groups', label: 'Groups & Permissions', path: '/groups', icon: 'Shield' },
             { key: 'users', label: 'Users', path: '/users', icon: 'UserCog' },
         ],
@@ -133,67 +116,7 @@ export const GROUP_LEVEL_COLORS = {
     EXTERNAL: '#64748b',
 };
 
-// ── Column-level permissions ───────────────────────────
-// Maps page → column key → array of permissions (user needs ANY ONE to see column).
-// Columns NOT listed here are always visible.
-export const COLUMN_PERMISSIONS = {
-    tickets: {
-        priority: ['TICKET_UPDATE_STATUS', 'TICKET_ASSIGN'],
-        assignedTo: ['TICKET_ASSIGN'],
-    },
-    invoices: {
-        tax: ['INVOICE_CREATE', 'INVOICE_PAYMENT'],
-        total: ['INVOICE_CREATE', 'INVOICE_PAYMENT'],
-        actions: ['INVOICE_PAYMENT'],
-    },
-    estimates: {
-        laborCost: ['ESTIMATE_CREATE', 'ESTIMATE_APPROVE'],
-        partsCost: ['ESTIMATE_CREATE', 'ESTIMATE_APPROVE'],
-        total: ['ESTIMATE_CREATE', 'ESTIMATE_APPROVE'],
-        actions: ['ESTIMATE_APPROVE', 'ESTIMATE_REJECT'],
-    },
-    inventory: {
-        reserved: ['INVENTORY_RESERVE'],
-        reorderLevel: ['PROCUREMENT_ORDER'],
-        actions: ['INVENTORY_RESERVE', 'PROCUREMENT_ORDER'],
-    },
-    branches: {
-        actions: ['BRANCH_EDIT', 'BRANCH_DEACTIVATE'],
-    },
-    customers: {
-        actions: ['CUSTOMER_EDIT'],
-    },
-    technicians: {
-        hourlyRate: ['TECHNICIAN_EDIT', 'METRICS_VIEW'],
-        actions: ['TECHNICIAN_EDIT'],
-    },
-    sla: {
-        actions: ['SLA_CREATE', 'COMPLAINT_FILE'],
-    },
-    franchises: {
-        royaltyPct: ['ROYALTY_VIEW', 'ROYALTY_CALCULATE'],
-        actions: ['FRANCHISE_ONBOARD'],
-    },
-    users: {
-        actions: ['GROUP_ASSIGN_USER', 'USER_ASSIGN_LOCATION'],
-    },
-};
-
-// ── Tab-level permissions ──────────────────────────────
-// Maps page → tab key → required permissions. Tab hidden if user lacks all.
-export const TAB_PERMISSIONS = {
-    billing: {
-        invoices: ['INVOICE_VIEW'],
-        estimates: ['ESTIMATE_VIEW'],
-    },
-    sla: {
-        slaRecords: ['SLA_VIEW'],
-        complaints: ['COMPLAINT_VIEW'],
-    },
-    inventory: {
-        parts: ['PARTS_VIEW'],
-        stock: ['INVENTORY_VIEW'],
-        orders: ['PROCUREMENT_ORDER'],
-    },
-};
+// ── COLUMN_PERMISSIONS, TAB_PERMISSIONS, SECTION_PERMISSIONS ──
+// Migrated to src/config/permissions.config.js (single source of truth).
+// Import from there: import { COLUMN_PERMISSIONS, TAB_PERMISSIONS, SECTION_PERMISSIONS } from '../config/permissions.config';
 

@@ -9,6 +9,7 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: repairbro-postgres
+    command: postgres -c max_connections=200 -c shared_buffers=256MB
     environment:
       POSTGRES_USER: repairbro
       POSTGRES_PASSWORD: repairbro_dev

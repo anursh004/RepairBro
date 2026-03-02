@@ -4,6 +4,7 @@ import DataTable from '../../components/DataTable';
 import Modal from '../../components/Modal';
 import { groupApi } from '../../api/groups';
 import { GROUP_LEVEL_COLORS } from '../../utils/constants';
+import { useActionPermission } from '../../hooks/useActionPermission';
 import toast from 'react-hot-toast';
 
 const SAMPLE_GROUPS = [
@@ -35,6 +36,7 @@ const SAMPLE_PERMISSIONS = [
 ];
 
 export default function GroupManagement() {
+    const { canCreate, can } = useActionPermission('groups');
     const [groups, setGroups] = useState([]);
     const [permissions, setPermissions] = useState([]);
     const [selected, setSelected] = useState(null);
@@ -107,9 +109,9 @@ export default function GroupManagement() {
         <div className="slide-in">
             <div className="page-header">
                 <h1>Groups & Permissions</h1>
-                <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+                {canCreate && <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
                     <Plus size={16} /> New Group
-                </button>
+                </button>}
             </div>
 
             <div className="card">
@@ -136,7 +138,7 @@ export default function GroupManagement() {
                             )
                         },
                         {
-                            key: 'id', label: '', sortable: false, render: (_, row) => !row.systemDefined && (
+                            key: 'id', label: '', sortable: false, render: (_, row) => !row.systemDefined && can('delete') && (
                                 <button className="btn btn-secondary btn-sm" onClick={() => handleDelete(row.id)}><Trash2 size={14} /></button>
                             )
                         },

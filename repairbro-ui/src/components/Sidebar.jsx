@@ -4,12 +4,14 @@ import { NAV_SECTIONS } from '../utils/constants';
 import {
     LayoutDashboard, Ticket, Users, Building2, Wrench, Receipt, FileText,
     Stethoscope, Package, Store, ShieldCheck, Bell, FlaskConical, UserCog,
+    ScrollText, Shield,
     ChevronLeft, ChevronRight, Zap
 } from 'lucide-react';
 
 const ICON_MAP = {
     LayoutDashboard, Ticket, Users, Building2, Wrench, Receipt, FileText,
     Stethoscope, Package, Store, ShieldCheck, Bell, FlaskConical, UserCog,
+    ScrollText, Shield,
 };
 
 export default function Sidebar({ collapsed, onToggle }) {

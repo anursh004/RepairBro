@@ -4,6 +4,7 @@ import DataTable from '../../components/DataTable';
 import Modal from '../../components/Modal';
 import { formatDateTime } from '../../utils/formatters';
 import { notificationApi } from '../../api/notifications';
+import { useActionPermission } from '../../hooks/useActionPermission';
 import toast from 'react-hot-toast';
 
 const SAMPLE = Array.from({ length: 15 }, (_, i) => ({
@@ -14,6 +15,7 @@ const SAMPLE = Array.from({ length: 15 }, (_, i) => ({
 }));
 
 export default function NotificationCenter() {
+    const { can } = useActionPermission('notifications');
     const [tab, setTab] = useState('recent');
     const [notifs, setNotifs] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -38,7 +40,7 @@ export default function NotificationCenter() {
         <div className="slide-in">
             <div className="page-header">
                 <h1>Notifications</h1>
-                <button className="btn btn-primary" onClick={() => setShowSend(true)}><Send size={16} /> Send</button>
+                {can('send') && <button className="btn btn-primary" onClick={() => setShowSend(true)}><Send size={16} /> Send</button>}
             </div>
             <div className="tab-bar">
                 <button className={`tab-item ${tab === 'recent' ? 'active' : ''}`} onClick={() => setTab('recent')}>Recent</button>
