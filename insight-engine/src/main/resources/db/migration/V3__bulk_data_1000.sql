@@ -37,4 +37,5 @@ FROM
         'a1b2c3d4-0001-4000-8000-000000000001'::uuid,
         'a1b2c3d4-0001-4000-8000-000000000002'::uuid,
         'a1b2c3d4-0001-4000-8000-000000000003'::uuid
-    ]) AS branch_uuid;
+    ]) AS branch_uuid
+ON CONFLICT (branch_id, date) DO NOTHING;

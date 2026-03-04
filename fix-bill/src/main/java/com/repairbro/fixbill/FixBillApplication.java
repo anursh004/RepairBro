@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication(scanBasePackages = {
         "com.repairbro.fixbill",
-        "com.repairbro.commons.exception"
+        "com.repairbro.commons"
 })
 public class FixBillApplication {
 

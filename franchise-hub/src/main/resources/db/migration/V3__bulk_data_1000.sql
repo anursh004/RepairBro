@@ -4,9 +4,9 @@
 INSERT INTO royalty_record (franchise_id, branch_id, period, gross_revenue, royalty_percent, royalty_amount, payment_status, created_at)
 SELECT
     (ARRAY[
-        'j1k2l3m4-0001-4000-8000-000000000001',
-        'j1k2l3m4-0001-4000-8000-000000000002',
-        'j1k2l3m4-0001-4000-8000-000000000003'
+        'd1e2f3a4-0001-4000-8000-000000000001',
+        'd1e2f3a4-0001-4000-8000-000000000002',
+        'd1e2f3a4-0001-4000-8000-000000000003'
     ]::uuid[])[1 + (s % 3)],
     (ARRAY[
         'a1b2c3d4-0001-4000-8000-000000000001',

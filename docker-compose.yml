@@ -4,12 +4,33 @@
 # ─────────────────────────────────────────────────────────
 version: '3.9'
 
+x-backend-common: &backend-common
+  restart: unless-stopped
+  networks:
+    - repairbro-net
+  depends_on:
+    postgres:
+      condition: service_healthy
+    kafka:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
 services:
   # ── PostgreSQL (separate databases per service) ──────
   postgres:
     image: postgres:16-alpine
     container_name: repairbro-postgres
     command: postgres -c max_connections=200 -c shared_buffers=256MB
+    entrypoint:
+      - sh
+      - -c
+      - |
+        cp /mnt/init-databases.sh /docker-entrypoint-initdb.d/init-databases.sh
+        sed -i 's/\r$$//' /docker-entrypoint-initdb.d/init-databases.sh
+        chmod +x /docker-entrypoint-initdb.d/init-databases.sh
+        exec docker-entrypoint.sh "$$@"
+      - --
     environment:
       POSTGRES_USER: repairbro
       POSTGRES_PASSWORD: repairbro_dev
@@ -18,36 +39,44 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infra/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
+      - ./infra/init-databases.sh:/mnt/init-databases.sh:ro
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U repairbro" ]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - repairbro-net
 
   # ── Apache Kafka ─────────────────────────────────────
   kafka:
-    image: bitnami/kafka:3.7
+    image: apache/kafka:latest
     container_name: repairbro-kafka
     environment:
-      KAFKA_CFG_NODE_ID: 1
-      KAFKA_CFG_PROCESS_ROLES: broker,controller
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      CLUSTER_ID: "RepairBroDevCluster0001"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
     ports:
       - "9094:9094"
     volumes:
-      - kafka_data:/bitnami/kafka
+      - kafka_data:/tmp/kraft-combined-logs
     healthcheck:
-      test: [ "CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092" ]
+      test: [ "CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1" ]
       interval: 15s
       timeout: 10s
-      retries: 5
+      retries: 10
+      start_period: 30s
+    networks:
+      - repairbro-net
 
   # ── Kafka UI (management) ────────────────────────────
   kafka-ui:
@@ -60,6 +89,8 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
     ports:
       - "9090:8080"
+    networks:
+      - repairbro-net
 
   # ── Redis ────────────────────────────────────────────
   redis:
@@ -74,10 +105,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - repairbro-net
 
   # ── Kong API Gateway ─────────────────────────────────
   kong:
-    image: kong:3.7-alpine
+    image: kong:latest
     container_name: repairbro-gateway
     environment:
       KONG_DATABASE: "off"
@@ -92,8 +125,156 @@ services:
       - ./api-gateway/kong.yml:/etc/kong/kong.yml:ro
     depends_on:
       - postgres
+    networks:
+      - repairbro-net
+
+  # ═══════════════════════════════════════════════════════
+  # MICROSERVICES
+  # ═══════════════════════════════════════════════════════
+
+  auth-service:
+    <<: *backend-common
+    image: repairbro-auth-service
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    container_name: repairbro-auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  repair-core:
+    <<: *backend-common
+    image: repairbro-repair-core
+    build:
+      context: .
+      dockerfile: repair-core/Dockerfile
+    container_name: repairbro-repair-core
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  fix-bill:
+    <<: *backend-common
+    image: repairbro-fix-bill
+    build:
+      context: .
+      dockerfile: fix-bill/Dockerfile
+    container_name: repairbro-fix-bill
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  diag-flow:
+    <<: *backend-common
+    image: repairbro-diag-flow
+    build:
+      context: .
+      dockerfile: diag-flow/Dockerfile
+    container_name: repairbro-diag-flow
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  parts-flow:
+    <<: *backend-common
+    image: repairbro-parts-flow
+    build:
+      context: .
+      dockerfile: parts-flow/Dockerfile
+    container_name: repairbro-parts-flow
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  franchise-hub:
+    <<: *backend-common
+    image: repairbro-franchise-hub
+    build:
+      context: .
+      dockerfile: franchise-hub/Dockerfile
+    container_name: repairbro-franchise-hub
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  notification-service:
+    <<: *backend-common
+    image: repairbro-notification-service
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: repairbro-notification-service
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  sla-guard:
+    <<: *backend-common
+    image: repairbro-sla-guard
+    build:
+      context: .
+      dockerfile: sla-guard/Dockerfile
+    container_name: repairbro-sla-guard
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  insight-engine:
+    <<: *backend-common
+    image: repairbro-insight-engine
+    build:
+      context: .
+      dockerfile: insight-engine/Dockerfile
+    container_name: repairbro-insight-engine
+    ports:
+      - "8089:8089"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  repair-sim:
+    <<: *backend-common
+    image: repairbro-repair-sim
+    build:
+      context: .
+      dockerfile: repair-sim/Dockerfile
+    container_name: repairbro-repair-sim
+    ports:
+      - "8090:8090"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  # ═══════════════════════════════════════════════════════
+  # FRONTEND UI
+  # ═══════════════════════════════════════════════════════
+
+  repairbro-ui:
+    image: repairbro-ui
+    build:
+      context: .
+      dockerfile: repairbro-ui/Dockerfile
+    container_name: repairbro-ui
+    ports:
+      - "3000:80"
+    depends_on:
+      - kong
+    networks:
+      - repairbro-net
 
 volumes:
   postgres_data:
   kafka_data:
   redis_data:
+
+
+networks:
+  repairbro-net:
+    driver: bridge

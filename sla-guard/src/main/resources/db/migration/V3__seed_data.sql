@@ -3,16 +3,16 @@
 -- ═══════ SLA RECORDS ═══════
 INSERT INTO sla_record (id, ticket_id, branch_id, sla_type, deadline, status, resolved_at) VALUES
 -- Mumbai tickets
-('i1j2k3l4-0001-4000-8000-000000000001', 'd1e2f3a4-0001-4000-8000-000000000001', 'a1b2c3d4-0001-4000-8000-000000000001', 'STANDARD_48H', now() - interval '3 days', 'RESOLVED', now() - interval '4 days'),
-('i1j2k3l4-0001-4000-8000-000000000002', 'd1e2f3a4-0001-4000-8000-000000000002', 'a1b2c3d4-0001-4000-8000-000000000001', 'STANDARD_48H', now() + interval '2 days', 'ACTIVE', NULL),
-('i1j2k3l4-0001-4000-8000-000000000003', 'd1e2f3a4-0001-4000-8000-000000000003', 'a1b2c3d4-0001-4000-8000-000000000001', 'URGENT_24H', now() - interval '1 hour', 'BREACHED', NULL),
-('i1j2k3l4-0001-4000-8000-000000000004', 'd1e2f3a4-0001-4000-8000-000000000005', 'a1b2c3d4-0001-4000-8000-000000000001', 'URGENT_24H', now() + interval '12 hours', 'ACTIVE', NULL),
+('c1d2e3f4-0001-4000-8000-000000000001', 'd1e2f3a4-0001-4000-8000-000000000001', 'a1b2c3d4-0001-4000-8000-000000000001', 'STANDARD_48H', now() - interval '3 days', 'RESOLVED', now() - interval '4 days'),
+('c1d2e3f4-0001-4000-8000-000000000002', 'd1e2f3a4-0001-4000-8000-000000000002', 'a1b2c3d4-0001-4000-8000-000000000001', 'STANDARD_48H', now() + interval '2 days', 'ACTIVE', NULL),
+('c1d2e3f4-0001-4000-8000-000000000003', 'd1e2f3a4-0001-4000-8000-000000000003', 'a1b2c3d4-0001-4000-8000-000000000001', 'URGENT_24H', now() - interval '1 hour', 'BREACHED', NULL),
+('c1d2e3f4-0001-4000-8000-000000000004', 'd1e2f3a4-0001-4000-8000-000000000005', 'a1b2c3d4-0001-4000-8000-000000000001', 'URGENT_24H', now() + interval '12 hours', 'ACTIVE', NULL),
 -- Pune tickets
-('i1j2k3l4-0001-4000-8000-000000000005', 'd1e2f3a4-0001-4000-8000-000000000007', 'a1b2c3d4-0001-4000-8000-000000000002', 'STANDARD_48H', now() + interval '1 day', 'ACTIVE', NULL),
-('i1j2k3l4-0001-4000-8000-000000000006', 'd1e2f3a4-0001-4000-8000-000000000008', 'a1b2c3d4-0001-4000-8000-000000000002', 'STANDARD_48H', now() - interval '2 days', 'RESOLVED', now() - interval '3 days'),
+('c1d2e3f4-0001-4000-8000-000000000005', 'd1e2f3a4-0001-4000-8000-000000000007', 'a1b2c3d4-0001-4000-8000-000000000002', 'STANDARD_48H', now() + interval '1 day', 'ACTIVE', NULL),
+('c1d2e3f4-0001-4000-8000-000000000006', 'd1e2f3a4-0001-4000-8000-000000000008', 'a1b2c3d4-0001-4000-8000-000000000002', 'STANDARD_48H', now() - interval '2 days', 'RESOLVED', now() - interval '3 days'),
 -- Nagpur tickets
-('i1j2k3l4-0001-4000-8000-000000000007', 'd1e2f3a4-0001-4000-8000-000000000011', 'a1b2c3d4-0001-4000-8000-000000000003', 'STANDARD_48H', now() - interval '1 day', 'RESOLVED', now() - interval '2 days'),
-('i1j2k3l4-0001-4000-8000-000000000008', 'd1e2f3a4-0001-4000-8000-000000000014', 'a1b2c3d4-0001-4000-8000-000000000003', 'URGENT_24H', now() - interval '2 hours', 'BREACHED', NULL);
+('c1d2e3f4-0001-4000-8000-000000000007', 'd1e2f3a4-0001-4000-8000-000000000011', 'a1b2c3d4-0001-4000-8000-000000000003', 'STANDARD_48H', now() - interval '1 day', 'RESOLVED', now() - interval '2 days'),
+('c1d2e3f4-0001-4000-8000-000000000008', 'd1e2f3a4-0001-4000-8000-000000000014', 'a1b2c3d4-0001-4000-8000-000000000003', 'URGENT_24H', now() - interval '2 hours', 'BREACHED', NULL);
 
 -- ═══════ COMPLAINTS ═══════
 INSERT INTO complaint (ticket_id, customer_id, branch_id, description, status, resolution) VALUES
@@ -29,4 +29,4 @@ INSERT INTO warranty (ticket_id, customer_id, branch_id, category, warranty_days
 
 -- ═══════ SLA CREDITS ═══════
 INSERT INTO sla_credit (ticket_id, customer_id, branch_id, sla_record_id, credit_amount, reason) VALUES
-('d1e2f3a4-0001-4000-8000-000000000003', 'c1d2e3f4-0001-4000-8000-000000000006', 'a1b2c3d4-0001-4000-8000-000000000001', 'i1j2k3l4-0001-4000-8000-000000000003', 500.00, 'SLA breach compensation — urgent repair exceeded 24-hour deadline');
+('d1e2f3a4-0001-4000-8000-000000000003', 'c1d2e3f4-0001-4000-8000-000000000006', 'a1b2c3d4-0001-4000-8000-000000000001', 'c1d2e3f4-0001-4000-8000-000000000003', 500.00, 'SLA breach compensation — urgent repair exceeded 24-hour deadline');

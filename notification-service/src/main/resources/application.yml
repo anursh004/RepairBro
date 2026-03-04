@@ -1,5 +1,5 @@
 server:
-  port: 8089
+  port: 8087
 
 spring:
   application:
@@ -61,9 +61,7 @@ repairbro:
     # SMS provider: twilio or msg91
     sms-provider: msg91
     sms-api-key: ${SMS_API_KEY:}
-
-# ── JWT Config (shared secret for token validation) ───
-repairbro:
+  # ── JWT Config (shared secret for token validation) ───
   jwt:
     secret: RepairBroSuperSecretKeyForDevelopmentOnlyChangeInProduction2024!
 

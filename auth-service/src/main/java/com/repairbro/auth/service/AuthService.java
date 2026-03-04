@@ -1,8 +1,11 @@
 package com.repairbro.auth.service;
 
 import com.repairbro.auth.dto.*;
+import com.repairbro.auth.model.PermissionGroup;
+import com.repairbro.auth.model.Role;
 import com.repairbro.auth.model.User;
 import com.repairbro.auth.model.UserStatus;
+import com.repairbro.auth.repository.PermissionGroupRepository;
 import com.repairbro.auth.repository.UserRepository;
 import com.repairbro.auth.security.JwtTokenProvider;
 import com.repairbro.commons.event.DomainEvent;
@@ -26,9 +29,18 @@ import java.util.stream.Collectors;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final PermissionGroupRepository permissionGroupRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final KafkaTemplate<String, DomainEvent> kafkaTemplate;
+
+    /** Maps legacy Role → Permission Group name (mirrors V5 migration) */
+    private static final Map<String, String> ROLE_TO_GROUP = Map.of(
+            "ADMIN", "Super Admin",
+            "BRANCH_MANAGER", "Service Manager",
+            "TECH", "Service Executive",
+            "FRANCHISEE", "Franchise Owner",
+            "CUSTOMER", "Customer");
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -50,6 +62,22 @@ public class AuthService {
                 .build();
 
         user = userRepository.save(user);
+
+        // Auto-assign permission groups based on legacy roles (mirrors V5 migration)
+        Set<PermissionGroup> groups = user.getRoles().stream()
+                .map(role -> ROLE_TO_GROUP.getOrDefault(role.name(), null))
+                .filter(groupName -> groupName != null)
+                .map(permissionGroupRepository::findByName)
+                .filter(java.util.Optional::isPresent)
+                .map(java.util.Optional::get)
+                .collect(Collectors.toSet());
+
+        if (!groups.isEmpty()) {
+            user.getPermissionGroups().addAll(groups);
+            user = userRepository.save(user);
+            log.info("Assigned {} permission group(s) to user {}: {}", groups.size(), user.getEmail(),
+                    groups.stream().map(PermissionGroup::getName).collect(Collectors.joining(", ")));
+        }
         log.info("User registered: {} [{}]", user.getEmail(), user.getId());
 
         // Publish domain event

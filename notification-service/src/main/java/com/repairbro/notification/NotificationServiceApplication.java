@@ -3,7 +3,7 @@ package com.repairbro.notification;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication(scanBasePackages = { "com.repairbro.notification", "com.repairbro.commons.exception" })
+@SpringBootApplication(scanBasePackages = { "com.repairbro.notification", "com.repairbro.commons" })
 public class NotificationServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(NotificationServiceApplication.class, args);

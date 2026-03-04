@@ -1,0 +1,28 @@
+# Build outputs
+**/build/
+**/out/
+**/target/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Git
+.git/
+.gitignore
+
+# Node
+**/node_modules/
+
+# OS
+**/.DS_Store
+Thumbs.db
+
+# Gradle cache (we want gradlew and gradle/ wrapper)
+.gradle/
+
+# Documentation
+*.pdf
+*.md
+!**/db/migration/**

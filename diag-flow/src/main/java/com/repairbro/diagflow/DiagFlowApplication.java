@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication(scanBasePackages = {
         "com.repairbro.diagflow",
-        "com.repairbro.commons.exception"
+        "com.repairbro.commons"
 })
 public class DiagFlowApplication {
     public static void main(String[] args) {

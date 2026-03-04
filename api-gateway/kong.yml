@@ -1,9 +1,11 @@
 # Kong Declarative Configuration
-# API Gateway routing for RepairBro services
+# API Gateway routing for RepairBro services (Docker)
 _format_version: "3.0"
 
 services:
-  # ── Auth Service ─────────────────────────────────────
+  # ── Auth Service (8081) ──────────────────────────────
+  # Controllers: AuthController(/api/v1), PermissionGroupController(/api/v1),
+  #              UserGroupController(/api/v1/users/{userId}), TechnicianController(/api/v1/technicians)
   - name: auth-service
     url: http://host.docker.internal:8081
     routes:
@@ -15,8 +17,22 @@ services:
         paths:
           - /api/v1/users
         strip_path: false
+      - name: group-routes
+        paths:
+          - /api/v1/groups
+        strip_path: false
+      - name: permission-routes
+        paths:
+          - /api/v1/permissions
+        strip_path: false
+      - name: technician-routes
+        paths:
+          - /api/v1/technicians
+        strip_path: false
 
-  # ── Repair Core Service ─────────────────────────────
+  # ── Repair Core Service (8082) ───────────────────────
+  # Controllers: TicketController(/api/v1/tickets), CustomerController(/api/v1/customers),
+  #              BranchController(/api/v1/branches)
   - name: repair-core
     url: http://host.docker.internal:8082
     routes:
@@ -24,8 +40,17 @@ services:
         paths:
           - /api/v1/tickets
         strip_path: false
+      - name: customer-routes
+        paths:
+          - /api/v1/customers
+        strip_path: false
+      - name: branch-routes
+        paths:
+          - /api/v1/branches
+        strip_path: false
 
-  # ── FixBill Service ─────────────────────────────────
+  # ── FixBill Service (8083) ───────────────────────────
+  # Controllers: InvoiceController(/api/v1), EstimateController(/api/v1/estimates)
   - name: fix-bill
     url: http://host.docker.internal:8083
     routes:
@@ -37,9 +62,95 @@ services:
         paths:
           - /api/v1/estimates
         strip_path: false
-      - name: payment-routes
+
+  # ── DiagFlow Service (8084) ──────────────────────────
+  # Controllers: DiagFlowController(/api/v1/diagnostics)
+  - name: diag-flow
+    url: http://host.docker.internal:8084
+    routes:
+      - name: diagnostics-routes
         paths:
-          - /api/v1/payments
+          - /api/v1/diagnostics
+        strip_path: false
+
+  # ── Parts Flow Service (8085) ────────────────────────
+  # Controllers: InventoryController(/api/v1) — /parts, /inventory, /procurement
+  - name: parts-flow
+    url: http://host.docker.internal:8085
+    routes:
+      - name: parts-routes
+        paths:
+          - /api/v1/parts
+        strip_path: false
+      - name: inventory-routes
+        paths:
+          - /api/v1/inventory
+        strip_path: false
+      - name: procurement-routes
+        paths:
+          - /api/v1/procurement
+        strip_path: false
+
+  # ── Franchise Hub Service (8086) ─────────────────────
+  # Controllers: FranchiseController(/api/v1) — /franchises, /royalties
+  - name: franchise-hub
+    url: http://host.docker.internal:8086
+    routes:
+      - name: franchise-routes
+        paths:
+          - /api/v1/franchises
+        strip_path: false
+      - name: royalty-routes
+        paths:
+          - /api/v1/royalties
+        strip_path: false
+
+  # ── Notification Service (8087) ──────────────────────
+  # Controllers: NotificationController(/api/v1/notifications)
+  - name: notification-service
+    url: http://host.docker.internal:8087
+    routes:
+      - name: notification-routes
+        paths:
+          - /api/v1/notifications
+        strip_path: false
+
+  # ── SLA Guard Service (8088) ─────────────────────────
+  # Controllers: SlaController(/api/v1) — /sla, /complaints
+  - name: sla-guard
+    url: http://host.docker.internal:8088
+    routes:
+      - name: sla-routes
+        paths:
+          - /api/v1/sla
+        strip_path: false
+      - name: complaint-routes
+        paths:
+          - /api/v1/complaints
+        strip_path: false
+
+  # ── Insight Engine Service (8089) ────────────────────
+  # Controllers: MetricsController(/api/v1) — /metrics, /reports
+  - name: insight-engine
+    url: http://host.docker.internal:8089
+    routes:
+      - name: metrics-routes
+        paths:
+          - /api/v1/metrics
+        strip_path: false
+      - name: reports-routes
+        paths:
+          - /api/v1/reports
+        strip_path: false
+
+  # ── Repair Sim Service (8090) ────────────────────────
+  # Controllers: SimulationController(/api/v1/simulation)
+  - name: repair-sim
+    url: http://host.docker.internal:8090
+    routes:
+      - name: simulation-routes
+        paths:
+          - /api/v1/simulation
         strip_path: false
 
 plugins:
@@ -53,8 +164,7 @@ plugins:
   - name: cors
     config:
       origins:
-        - "http://localhost:3000"
-        - "http://localhost:5173"
+        - "*"
       methods:
         - GET
         - POST
@@ -66,10 +176,11 @@ plugins:
         - Authorization
         - Content-Type
         - X-Correlation-Id
+        - X-Location-Context
       exposed_headers:
         - X-Correlation-Id
       max_age: 3600
-      credentials: true
+      credentials: false
 
   # ── Request ID (correlation) ────────────────────────
   - name: correlation-id

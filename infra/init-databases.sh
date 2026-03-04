@@ -1,7 +1,4 @@
 #!/bin/bash
-# Creates multiple PostgreSQL databases from POSTGRES_MULTIPLE_DATABASES env var
-# Used by docker-entrypoint-initdb.d
-
 set -e
 set -u
 

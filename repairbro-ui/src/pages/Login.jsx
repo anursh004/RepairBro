@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 
 export default function Login() {
     const [isRegister, setIsRegister] = useState(false);
-    const [form, setForm] = useState({ name: '', email: '', password: '', role: 'ADMIN' });
+    const [form, setForm] = useState({ fullName: '', email: '', password: '', roles: ['ADMIN'] });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { login: authLogin } = useAuth();
@@ -52,8 +52,8 @@ export default function Login() {
                             <input
                                 className="form-input"
                                 placeholder="John Doe"
-                                value={form.name}
-                                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                value={form.fullName}
+                                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
                                 required
                             />
                         </div>
@@ -85,8 +85,8 @@ export default function Login() {
                             <label className="form-label">Role</label>
                             <select
                                 className="form-select"
-                                value={form.role}
-                                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                                value={form.roles[0]}
+                                onChange={(e) => setForm({ ...form, roles: [e.target.value] })}
                             >
                                 <option value="ADMIN">Admin</option>
                                 <option value="BRANCH_MANAGER">Branch Manager</option>
